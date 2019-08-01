@@ -37,7 +37,8 @@ def get_tides():
 
 
 def get_weather():
-    response = requests.get('https://weather.com/weather/tenday/l/Pearlington+MS+USMS0285:1:US')
+    response = requests.get('https://weather.com/weather/tenday/l/f795e22a7d7da0717643ec585d76482217d135add9e3c78'
+                            '2015376e5cd987cd4')
     soup = BeautifulSoup(response.content, 'lxml')
     table = soup.find_all('table', {'class': 'twc-table'})
     df = pd.read_html(str(table))[0]
@@ -92,15 +93,33 @@ def get_moon_phase():
 
     moon_df = pd.DataFrame()
     moon_df['Phase'] = phase_list
-    moon_df["Date"] = new_date_list
+    moon_df["Day"] = new_date_list
+    print(moon_df)
     return moon_df
 
 
-get_tides()
-weather_conditions(get_weather())
-# get_weather()
-get_moon_phase()
+def phase_add(moon_df, week_df):
+    phases = []
+    margin = datetime.timedelta(days=3)
+    for ind in moon_df.index:
+        phase_day = moon_df['Day'][ind]
+        phase_status = moon_df['Phase'][ind]
+        for i in week_df.index:
+            upper_limit = phase_day + margin
+            lower_limit = phase_day - margin
+            if lower_limit < week_df['Day'][i] < upper_limit:
+                phases.append(phase_status)
+            else:
+                phases.append('No phase data')
+    print(phases)
 
+# get_tides()
+# weather_conditions(get_weather())
+# get_weather()
+# get_moon_phase()
+
+
+phase_add(get_moon_phase(), get_weather())
 
 
 
