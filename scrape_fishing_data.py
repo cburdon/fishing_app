@@ -7,6 +7,10 @@ import re
 from googlesearch import search
 today = (pd.Timestamp(datetime.date.today()))
 
+# get_tides: loads html file of specific tide table for Pearlington, MS into a Pandas dataframe.  Cleans dataframe and
+# selects the data for the next week.
+# return: a list of dataframes detailing sunrise, high tide, and low tide for the next week.
+
 
 def get_tides():
     response = requests.get('https://www.tide-forecast.com/locations/Pearlington-Pearl-River-Mississippi/tides/latest')
@@ -20,7 +24,6 @@ def get_tides():
         new_date = dateparser.parse(date)
         new_date_list.append(new_date)
     new_df[0] = new_date_list
-    # today = (pd.Timestamp(datetime.date.today()))
     margin = datetime.timedelta(weeks=1)
     cutoff = today + margin
     week_df = new_df[new_df[0] < cutoff]
@@ -36,6 +39,9 @@ def get_tides():
     return tide_df_list
 
 
+# get_weather: loads html file of url for weather data for Pearlington MS into a Pandas Dataframe. Cleans the data and
+# selects a week's worth of weather.
+# return: Pandas dataframe with a week of weather data.
 def get_weather():
     response = requests.get('https://weather.com/weather/tenday/l/f795e22a7d7da0717643ec585d76482217d135add9e3c78'
                             '2015376e5cd987cd4')
@@ -61,11 +67,17 @@ def get_weather():
     return week_df
 
 
+# weather_conditions: takes the get_weather dataframe as an argument and prints each day and weather conditions
+# contained within the dataframe.
 def weather_conditions(week_df):
     for ind in week_df.index:
         print('for the day of ' + str(week_df['Day'][ind]) + ', the conditions are: ' + str(week_df['Description'][ind])
               + ', the chance of rain is: ' + str(week_df['Precip'][ind]))
 
+
+# get_moon_phase: loads a url as a BeautifulSoup object.  Parses that url as a string through a regex to extract moon
+# phase data and the corresponding dates.  Converts the dates to a standard datetime format using dateparser.
+# return: a Pandas dataframe containing the moon phase data.
 
 def get_moon_phase():
     url = 'https://www.timeanddate.com/moon/phases/'
@@ -98,19 +110,31 @@ def get_moon_phase():
     return moon_df
 
 
+# phase_add: takes get_weather dataframe and get_moon_phase dataframe as arguments.  Iterates through them and checks if
+# any dates are within 3 days of a moon phase.  If so, that moon phase is appended to a list.  If no moon phases match a
+# given date, append "No phase data" to the list.  NOTE: iteration is still not working as intended.  The conditional
+# statements do not seem to catch the days that come before a given moon phase, and don't reliably flag the right moon
+# phase.  Also occasionally they append more than 7 items to the list of phases, so sometimes the flag variable doesn't
+# prevent multiple phase statuses from being appended for the same date. Work in Progress.
 def phase_add(moon_df, week_df):
     phases = []
     margin = datetime.timedelta(days=3)
     for ind in moon_df.index:
+        flag = True
         phase_day = moon_df['Day'][ind]
         phase_status = moon_df['Phase'][ind]
         for i in week_df.index:
             upper_limit = phase_day + margin
             lower_limit = phase_day - margin
-            if lower_limit < week_df['Day'][i] < upper_limit:
+            if lower_limit <= week_df['Day'][i] <= upper_limit:
                 phases.append(phase_status)
+                flag = False
             else:
-                phases.append('No phase data')
+                pass
+        if flag:
+            phases.append('No phase data')
+
+# phases.append('No phase data')
     print(phases)
 
 # get_tides()
